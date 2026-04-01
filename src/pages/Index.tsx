@@ -7,11 +7,42 @@ import { getMuscleRecovery } from '@/lib/recovery';
 import { VolumeChart } from '@/components/dashboard/VolumeChart';
 import { AICoachPanel } from '@/components/dashboard/AICoachPanel';
 import { RecoveryStatusPanel } from '@/components/dashboard/RecoveryStatus';
+import { BodyWeightCard } from '@/components/dashboard/BodyWeightCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { Dumbbell, TrendingUp, Calendar, Flame } from 'lucide-react';
+import { Dumbbell, TrendingUp, Calendar, Flame, Zap } from 'lucide-react';
+
+function calculateStreak(logs: { date: string }[]): number {
+  if (logs.length === 0) return 0;
+  const sorted = [...logs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const uniqueDays = [...new Set(sorted.map(l => new Date(l.date).toISOString().split('T')[0]))];
+  
+  let streak = 0;
+  let checkDate = new Date();
+  // Include today or yesterday as start
+  const todayStr = checkDate.toISOString().split('T')[0];
+  const yesterdayStr = new Date(checkDate.getTime() - 86400000).toISOString().split('T')[0];
+  
+  if (!uniqueDays.includes(todayStr) && !uniqueDays.includes(yesterdayStr)) return 0;
+  if (!uniqueDays.includes(todayStr)) {
+    checkDate = new Date(checkDate.getTime() - 86400000);
+  }
+
+  // Count consecutive weeks (training at least once per week)
+  for (let w = 0; w < 52; w++) {
+    const weekStart = new Date(checkDate.getTime() - (w * 7 + checkDate.getDay()) * 86400000);
+    const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
+    const hasWorkout = uniqueDays.some(d => {
+      const date = new Date(d);
+      return date >= weekStart && date < weekEnd;
+    });
+    if (hasWorkout) streak++;
+    else break;
+  }
+  return streak;
+}
 
 const Dashboard = () => {
   const { data: logs = [], isLoading: logsLoading } = useWorkoutLogs();
@@ -27,9 +58,19 @@ const Dashboard = () => {
   const totalSets = useMemo(() => 
     logs.reduce((sum, l) => sum + l.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0), 0),
   [logs]);
+  const streak = useMemo(() => calculateStreak(logs), [logs]);
 
   if (logsLoading) {
-    return <div className="flex h-[50vh] items-center justify-center text-muted-foreground">Loading dashboard...</div>;
+    return (
+      <div className="space-y-6">
+        <div><h1 className="text-2xl font-bold tracking-tight">Dashboard</h1></div>
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-28 rounded-xl bg-secondary/30 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -72,7 +113,7 @@ const Dashboard = () => {
       </Card>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-4 text-center">
             <Flame className="h-5 w-5 mx-auto mb-1 text-primary" />
@@ -94,7 +135,17 @@ const Dashboard = () => {
             <p className="text-[10px] text-muted-foreground uppercase">Weeks</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Zap className="h-5 w-5 mx-auto mb-1 text-amber-400" />
+            <p className="text-xl font-bold">{streak}</p>
+            <p className="text-[10px] text-muted-foreground uppercase">Streak 🔥</p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Body Weight */}
+      <BodyWeightCard />
 
       {/* AI Coach */}
       <AICoachPanel insights={insights} />

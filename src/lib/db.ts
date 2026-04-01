@@ -1,6 +1,6 @@
 import { WorkoutLog } from './types';
 import { supabase, isSupabaseConfigured } from './supabase';
-import { get, set, del } from 'idb-keyval';
+import { get, set } from 'idb-keyval';
 
 // This is a Database Abstraction Layer.
 // Connected to Supabase if ENV vars are present, otherwise falls back to IndexedDB.
@@ -36,13 +36,24 @@ const ensureMigrated = async () => {
   }
 };
 
+// Helper to get current user id
+const getCurrentUserId = async (): Promise<string | null> => {
+  if (!isSupabaseConfigured()) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+};
+
 export const dbFetchLogs = async (): Promise<WorkoutLog[]> => {
   await ensureMigrated();
 
   if (isSupabaseConfigured()) {
+    const userId = await getCurrentUserId();
+    if (!userId) return [];
+    
     const { data, error } = await supabase
       .from('user_logs')
       .select('log_payload')
+      .eq('user_id', userId)
       .order('date', { ascending: false });
 
     if (error) {
@@ -67,12 +78,16 @@ export const dbSaveWorkoutLog = async (workout: WorkoutLog): Promise<WorkoutLog>
   const completed = { ...workout, completedAt: workout.completedAt || new Date().toISOString() };
 
   if (isSupabaseConfigured()) {
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error('Not authenticated');
+
     const { error } = await supabase
       .from('user_logs')
       .upsert({ 
         id: completed.id, 
         date: completed.date,
-        log_payload: completed 
+        log_payload: completed,
+        user_id: userId,
       }, { onConflict: 'id' });
 
     if (error) {
@@ -108,23 +123,23 @@ export const dbSaveWorkoutLog = async (workout: WorkoutLog): Promise<WorkoutLog>
 export const dbFetchTrainingWeeks = async (): Promise<number> => {
   await ensureMigrated();
 
-  if (isSupabaseConfigured()) {
-    const logs = await dbFetchLogs();
-    const weeks = new Set(logs.map(l => {
-      const d = new Date(l.date);
-      const weekStart = new Date(d);
-      weekStart.setDate(d.getDate() - d.getDay());
-      return weekStart.toISOString().split('T')[0];
-    }));
-    return weeks.size > 0 ? weeks.size : 1;
-  }
-
+  // Use IndexedDB cached value first (avoids refetching all logs)
   try {
     const data = await get<number>(DB_KEY_WEEKS);
-    return data !== undefined ? data : 1;
-  } catch(e) {
-    return 1;
-  }
+    if (data !== undefined && data > 0) return data;
+  } catch(e) {}
+
+  // Compute from logs if no cached value
+  const logs = await dbFetchLogs();
+  const weeks = new Set(logs.map(l => {
+    const d = new Date(l.date);
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay());
+    return weekStart.toISOString().split('T')[0];
+  }));
+  const count = weeks.size > 0 ? weeks.size : 1;
+  await set(DB_KEY_WEEKS, count);
+  return count;
 };
 
 export const dbDeleteWorkoutLog = async (logId: string): Promise<boolean> => {

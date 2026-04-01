@@ -1,30 +1,13 @@
 import { MuscleGroup, MuscleRecovery, RecoveryStatus, WorkoutLog } from './types';
 import { MUSCLE_LABELS } from './program-data';
+import { ALL_MUSCLES, EXERCISE_MUSCLE_MAP } from './constants';
 
 const RECOVERY_HOURS = 48;
-const ALL_MUSCLES: MuscleGroup[] = ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'quads', 'hamstrings', 'glutes', 'calves', 'core'];
-
-const EXERCISE_MUSCLE_MAP: Record<string, MuscleGroup[]> = {
-  'db-floor-press': ['chest', 'triceps'],
-  'db-row': ['back'],
-  'db-ohp': ['shoulders'],
-  'db-lateral-raise': ['shoulders'],
-  'db-rear-delt-fly': ['shoulders', 'back'],
-  'bicep-curl': ['biceps'],
-  'tricep-extension': ['triceps'],
-  'goblet-squat': ['quads', 'glutes'],
-  'rdl': ['hamstrings', 'glutes'],
-  'hip-thrust': ['glutes'],
-  'walking-lunges': ['quads', 'glutes'],
-  'calf-raises': ['calves'],
-  'core': ['core'],
-};
 
 export function getMuscleRecovery(logs: WorkoutLog[]): MuscleRecovery[] {
   const lastTrained: Record<string, string | null> = {};
   ALL_MUSCLES.forEach(m => (lastTrained[m] = null));
 
-  // Find last trained date for each muscle
   const sortedLogs = [...logs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   sortedLogs.forEach(log => {
