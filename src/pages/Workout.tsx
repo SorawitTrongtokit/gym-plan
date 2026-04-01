@@ -3,6 +3,7 @@ import { useWorkoutStore } from '@/stores/workout-store';
 import { getTodaysWorkout, PROGRAM, DAY_LABELS } from '@/lib/program-data';
 import { getOverloadSuggestion } from '@/lib/overload-engine';
 import { getRecoveryWarnings } from '@/lib/recovery';
+import { useWorkoutLogs, useSaveWorkoutMutation } from '@/hooks/use-workouts';
 import { ExerciseCard } from '@/components/workout/ExerciseCard';
 import { RestTimer } from '@/components/workout/RestTimer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,10 +15,14 @@ import { AlertTriangle, CheckCircle2, Play, X } from 'lucide-react';
 import { DayType, SetLog } from '@/lib/types';
 
 const WorkoutPage = () => {
-  const { logs, activeWorkout, restTimerDuration, startWorkout, logSet, completeWorkout, cancelWorkout, setRestTimerDuration } = useWorkoutStore();
+  const { activeWorkout, restTimerDuration, startWorkout, logSet, completeWorkout, cancelWorkout, setRestTimerDuration, startRestTimer, restTimerEndTime } = useWorkoutStore();
+  const { data: logs = [] } = useWorkoutLogs();
+  const { mutate: saveWorkout } = useSaveWorkoutMutation();
   const todaysWorkout = getTodaysWorkout();
   const [selectedDay, setSelectedDay] = useState<DayType>(todaysWorkout.id);
-  const [showTimer, setShowTimer] = useState(false);
+
+  // showTimer is now derived from the global store
+  const showTimer = restTimerEndTime !== null;
 
   const workoutDays = PROGRAM.filter(p => p.exercises.length > 0);
   const selected = PROGRAM.find(p => p.id === selectedDay) || todaysWorkout;
@@ -28,8 +33,15 @@ const WorkoutPage = () => {
 
   const handleCompleteSet = useCallback((exerciseId: string, set: SetLog) => {
     logSet(exerciseId, set);
-    setShowTimer(true);
-  }, [logSet]);
+    startRestTimer(restTimerDuration);
+  }, [logSet, restTimerDuration, startRestTimer]);
+
+  const handleCompleteWorkout = () => {
+    const finishedWorkout = completeWorkout();
+    if (finishedWorkout) {
+      saveWorkout(finishedWorkout);
+    }
+  };
 
   // Recovery warnings
   const targetMuscles = selected.exercises.flatMap(e => e.muscleGroups);
@@ -107,7 +119,7 @@ const WorkoutPage = () => {
         </div>
         <div className="flex items-center gap-2">
           {allDone ? (
-            <Button onClick={completeWorkout}>
+            <Button onClick={handleCompleteWorkout}>
               <CheckCircle2 className="h-4 w-4 mr-2" /> Finish
             </Button>
           ) : (
@@ -125,11 +137,7 @@ const WorkoutPage = () => {
 
       {/* Rest timer */}
       {showTimer && (
-        <RestTimer
-          duration={restTimerDuration}
-          autoStart={true}
-          onComplete={() => setShowTimer(false)}
-        />
+        <RestTimer />
       )}
 
       {/* Exercise cards */}
@@ -149,7 +157,7 @@ const WorkoutPage = () => {
       })}
 
       {allDone && (
-        <Button className="w-full" size="lg" onClick={completeWorkout}>
+        <Button className="w-full" size="lg" onClick={handleCompleteWorkout}>
           <CheckCircle2 className="h-4 w-4 mr-2" /> Complete Workout
         </Button>
       )}

@@ -1,68 +1,18 @@
-import { useMemo, useState } from 'react';
-import { useWorkoutStore } from '@/stores/workout-store';
+import { useState } from 'react';
+import { useProgressData, usePersonalBests } from '@/hooks/use-workouts';
+import { ALL_EXERCISES } from '@/lib/program-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Trophy } from 'lucide-react';
 
-const ALL_EXERCISES = [
-  { id: 'db-floor-press', name: 'Dumbbell Floor Press' },
-  { id: 'db-row', name: 'One-Arm Dumbbell Row' },
-  { id: 'db-ohp', name: 'Dumbbell Overhead Press' },
-  { id: 'db-lateral-raise', name: 'Dumbbell Lateral Raise' },
-  { id: 'db-rear-delt-fly', name: 'Dumbbell Rear Delt Fly' },
-  { id: 'bicep-curl', name: 'Bicep Curl' },
-  { id: 'tricep-extension', name: 'Tricep Extension' },
-  { id: 'goblet-squat', name: 'Goblet Squat' },
-  { id: 'rdl', name: 'Romanian Deadlift' },
-  { id: 'hip-thrust', name: 'Hip Thrust' },
-  { id: 'walking-lunges', name: 'Walking Lunges' },
-  { id: 'calf-raises', name: 'Calf Raises' },
-  { id: 'core', name: 'Core (Plank / Leg Raises)' },
-];
-
 const ProgressPage = () => {
-  const { logs } = useWorkoutStore();
   const [selectedExercise, setSelectedExercise] = useState(ALL_EXERCISES[0].id);
+  const { data: chartData = [], isLoading: isChartLoading } = useProgressData(selectedExercise);
+  const { data: personalBests = [], isLoading: isPbsLoading } = usePersonalBests();
 
-  const chartData = useMemo(() => {
-    return logs
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .flatMap(log =>
-        log.exercises
-          .filter(e => e.exerciseId === selectedExercise)
-          .map(e => {
-            const completedSets = e.sets.filter(s => s.completed);
-            if (completedSets.length === 0) return null;
-            const maxWeight = Math.max(...completedSets.map(s => s.weight));
-            const avgReps = Math.round(completedSets.reduce((sum, s) => sum + s.reps, 0) / completedSets.length);
-            return {
-              date: new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              weight: maxWeight,
-              reps: avgReps,
-            };
-          })
-      )
-      .filter(Boolean);
-  }, [logs, selectedExercise]);
-
-  const personalBests = useMemo(() => {
-    return ALL_EXERCISES.map(ex => {
-      let maxWeight = 0;
-      let maxReps = 0;
-      logs.forEach(log => {
-        log.exercises.filter(e => e.exerciseId === ex.id).forEach(e => {
-          e.sets.filter(s => s.completed).forEach(s => {
-            if (s.weight > maxWeight) maxWeight = s.weight;
-            if (s.reps > maxReps) maxReps = s.reps;
-          });
-        });
-      });
-      return { ...ex, maxWeight, maxReps };
-    }).filter(e => e.maxWeight > 0);
-  }, [logs]);
-
+  const isLoading = isChartLoading || isPbsLoading;
   const selectedName = ALL_EXERCISES.find(e => e.id === selectedExercise)?.name;
 
   return (
@@ -71,6 +21,10 @@ const ProgressPage = () => {
         <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
         <p className="text-sm text-muted-foreground">Track your strength gains over time</p>
       </div>
+
+      {isLoading && (
+        <div className="text-sm text-muted-foreground animate-pulse">Loading progress data...</div>
+      )}
 
       {/* Exercise selector + chart */}
       <Card>

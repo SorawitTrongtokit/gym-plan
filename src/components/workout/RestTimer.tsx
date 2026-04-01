@@ -1,48 +1,83 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw } from 'lucide-react';
+import { useWorkoutStore } from '@/stores/workout-store';
 
 interface RestTimerProps {
-  duration: number;
-  autoStart?: boolean;
   onComplete?: () => void;
 }
 
-export function RestTimer({ duration, autoStart = false, onComplete }: RestTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(duration);
-  const [isRunning, setIsRunning] = useState(autoStart);
+export function RestTimer({ onComplete }: RestTimerProps) {
+  const { restTimerEndTime, restTimerDuration, startRestTimer, clearRestTimer } = useWorkoutStore();
+  
+  const calculateTimeLeft = () => {
+    if (!restTimerEndTime) return 0;
+    return Math.max(0, Math.round((restTimerEndTime - Date.now()) / 1000));
+  };
+
+  // timeLeft is either the remaining time of an active timer, 
+  // or a locally paused paused amount, or the default duration.
+  const [timeLeft, setTimeLeft] = useState(restTimerDuration);
+  const [isRunning, setIsRunning] = useState(false);
+
+  // Sync state when component mounts or global timer changes
+  useEffect(() => {
+    if (restTimerEndTime) {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+      setIsRunning(remaining > 0);
+    } else {
+      setIsRunning(false);
+      // Wait, don't reset timeLeft to duration automatically if it was just paused
+      // We only reset if we want. But let's leave timeLeft as is if paused.
+    }
+  }, [restTimerEndTime]);
 
   useEffect(() => {
-    if (autoStart) {
-      setTimeLeft(duration);
+    if (!isRunning || !restTimerEndTime) return;
+    
+    const interval = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+      
+      if (remaining <= 0) {
+        setIsRunning(false);
+        clearRestTimer();
+        onComplete?.();
+        // Vibrate if supported
+        if (navigator.vibrate) navigator.vibrate(200);
+      }
+    }, 200);
+    
+    return () => clearInterval(interval);
+  }, [isRunning, restTimerEndTime, onComplete, clearRestTimer]);
+
+  const toggleTimer = () => {
+    if (isRunning) {
+      // Pause: clear global timer, keep local timeLeft
+      clearRestTimer();
+      setIsRunning(false);
+    } else {
+      // Resume or Start
+      const durationToStart = timeLeft > 0 ? timeLeft : restTimerDuration;
+      startRestTimer(durationToStart);
       setIsRunning(true);
     }
-  }, [autoStart, duration]);
+  };
 
-  useEffect(() => {
-    if (!isRunning || timeLeft <= 0) return;
-    const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          setIsRunning(false);
-          onComplete?.();
-          // Vibrate if supported
-          if (navigator.vibrate) navigator.vibrate(200);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft, onComplete]);
+  const resetTimer = () => {
+    clearRestTimer();
+    setTimeLeft(restTimerDuration);
+    setIsRunning(false);
+  };
 
-  const progress = ((duration - timeLeft) / duration) * 100;
+  const progress = ((restTimerDuration - timeLeft) / restTimerDuration) * 100;
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
   const circumference = 2 * Math.PI * 45;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  const strokeDashoffset = Math.max(0, circumference - (progress / 100) * circumference);
 
   return (
     <Card className="bg-secondary/50 border-border/50">
@@ -55,7 +90,7 @@ export function RestTimer({ duration, autoStart = false, onComplete }: RestTimer
               stroke="hsl(var(--primary))"
               strokeWidth="4" strokeLinecap="round"
               strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
+              strokeDashoffset={strokeDashoffset || 0}
               className="transition-all duration-1000"
             />
           </svg>
@@ -70,14 +105,14 @@ export function RestTimer({ duration, autoStart = false, onComplete }: RestTimer
         <div className="flex gap-1">
           <Button
             variant="ghost" size="icon"
-            onClick={() => setIsRunning(!isRunning)}
+            onClick={toggleTimer}
             className="h-8 w-8"
           >
             {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
           <Button
             variant="ghost" size="icon"
-            onClick={() => { setTimeLeft(duration); setIsRunning(false); }}
+            onClick={resetTimer}
             className="h-8 w-8"
           >
             <RotateCcw className="h-4 w-4" />

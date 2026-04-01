@@ -1,6 +1,6 @@
 import { Exercise, WorkoutDay } from './types';
 
-const upperExercises: Exercise[] = [
+export const upperExercises: Exercise[] = [
   { id: 'db-floor-press', name: 'Dumbbell Floor Press', sets: 4, targetRirMin: 1, targetRirMax: 2, muscleGroups: ['chest', 'triceps'] },
   { id: 'db-row', name: 'One-Arm Dumbbell Row', sets: 4, targetRirMin: 1, targetRirMax: 2, muscleGroups: ['back'] },
   { id: 'db-ohp', name: 'Dumbbell Overhead Press', sets: 3, targetRirMin: 1, targetRirMax: 2, muscleGroups: ['shoulders'] },
@@ -10,7 +10,7 @@ const upperExercises: Exercise[] = [
   { id: 'tricep-extension', name: 'Tricep Extension', sets: 3, targetRirMin: 0, targetRirMax: 0, muscleGroups: ['triceps'] },
 ];
 
-const lowerExercises: Exercise[] = [
+export const lowerExercises: Exercise[] = [
   { id: 'goblet-squat', name: 'Goblet Squat', sets: 3, targetRirMin: 1, targetRirMax: 2, muscleGroups: ['quads', 'glutes'] },
   { id: 'rdl', name: 'Romanian Deadlift', sets: 3, targetRirMin: 1, targetRirMax: 2, muscleGroups: ['hamstrings', 'glutes'] },
   { id: 'hip-thrust', name: 'Hip Thrust', sets: 3, targetRirMin: 1, targetRirMax: 2, muscleGroups: ['glutes'] },
@@ -18,6 +18,8 @@ const lowerExercises: Exercise[] = [
   { id: 'calf-raises', name: 'Calf Raises', sets: 3, targetRirMin: 0, targetRirMax: 0, muscleGroups: ['calves'] },
   { id: 'core', name: 'Core (Plank / Leg Raises)', sets: 3, targetRirMin: 0, targetRirMax: 2, muscleGroups: ['core'] },
 ];
+
+export const ALL_EXERCISES: Exercise[] = [...upperExercises, ...lowerExercises];
 
 export const PROGRAM: WorkoutDay[] = [
   { id: 'upper-a', label: 'Upper A', dayOfWeek: 1, exercises: upperExercises },
