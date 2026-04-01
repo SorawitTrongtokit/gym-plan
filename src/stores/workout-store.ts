@@ -3,26 +3,25 @@ import { persist } from 'zustand/middleware';
 import { WorkoutLog, SetLog, DayType } from '@/lib/types';
 
 interface WorkoutState {
-  logs: WorkoutLog[];
   activeWorkout: WorkoutLog | null;
-  trainingWeeks: number;
   restTimerDuration: number;
+  restTimerEndTime: number | null;
 
   startWorkout: (dayType: DayType, exercises: { id: string; name: string; sets: number }[]) => void;
   logSet: (exerciseId: string, set: SetLog) => void;
-  completeWorkout: () => void;
+  completeWorkout: () => WorkoutLog | null;
   cancelWorkout: () => void;
   setRestTimerDuration: (seconds: number) => void;
-  resetDeloadCounter: () => void;
+  startRestTimer: (durationInSeconds: number) => void;
+  clearRestTimer: () => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
   persist(
     (set, get) => ({
-      logs: [],
       activeWorkout: null,
-      trainingWeeks: 1,
       restTimerDuration: 90,
+      restTimerEndTime: null,
 
       startWorkout: (dayType, exercises) => {
         const workout: WorkoutLog = {
@@ -42,7 +41,7 @@ export const useWorkoutStore = create<WorkoutState>()(
             })),
           })),
         };
-        set({ activeWorkout: workout });
+        set({ activeWorkout: workout, restTimerEndTime: null });
       },
 
       logSet: (exerciseId, setData) => {
@@ -67,27 +66,22 @@ export const useWorkoutStore = create<WorkoutState>()(
 
       completeWorkout: () => {
         const active = get().activeWorkout;
-        if (!active) return;
+        if (!active) return null;
 
         const completed = { ...active, completedAt: new Date().toISOString() };
-        const logs = [...get().logs, completed];
-
-        // Update training weeks (rough: count unique weeks with workouts)
-        const weeks = new Set(logs.map(l => {
-          const d = new Date(l.date);
-          const weekStart = new Date(d);
-          weekStart.setDate(d.getDate() - d.getDay());
-          return weekStart.toISOString().split('T')[0];
-        }));
-
-        set({ logs, activeWorkout: null, trainingWeeks: weeks.size });
+        set({ activeWorkout: null, restTimerEndTime: null });
+        return completed;
       },
 
-      cancelWorkout: () => set({ activeWorkout: null }),
+      cancelWorkout: () => set({ activeWorkout: null, restTimerEndTime: null }),
 
       setRestTimerDuration: (seconds) => set({ restTimerDuration: seconds }),
-
-      resetDeloadCounter: () => set({ trainingWeeks: 1 }),
+      
+      startRestTimer: (durationInSeconds) => set({ 
+        restTimerEndTime: Date.now() + durationInSeconds * 1000 
+      }),
+      
+      clearRestTimer: () => set({ restTimerEndTime: null }),
     }),
     { name: 'ai-workout-store' }
   )

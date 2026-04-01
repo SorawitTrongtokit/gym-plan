@@ -1,4 +1,5 @@
-import { useWorkoutStore } from '@/stores/workout-store';
+import { useMemo } from 'react';
+import { useWorkoutLogs, useTrainingWeeks } from '@/hooks/use-workouts';
 import { getTodaysWorkout } from '@/lib/program-data';
 import { getWeeklyVolume } from '@/lib/volume-calc';
 import { getCoachInsights } from '@/lib/coach-engine';
@@ -13,14 +14,23 @@ import { Link } from 'react-router-dom';
 import { Dumbbell, TrendingUp, Calendar, Flame } from 'lucide-react';
 
 const Dashboard = () => {
-  const { logs, trainingWeeks } = useWorkoutStore();
+  const { data: logs = [], isLoading: logsLoading } = useWorkoutLogs();
+  const { data: trainingWeeks = 1 } = useTrainingWeeks();
+
   const todaysWorkout = getTodaysWorkout();
-  const volumes = getWeeklyVolume(logs);
-  const insights = getCoachInsights(logs, trainingWeeks);
-  const recovery = getMuscleRecovery(logs);
+
+  const volumes = useMemo(() => getWeeklyVolume(logs), [logs]);
+  const insights = useMemo(() => getCoachInsights(logs, trainingWeeks), [logs, trainingWeeks]);
+  const recovery = useMemo(() => getMuscleRecovery(logs), [logs]);
 
   const totalWorkouts = logs.length;
-  const totalSets = logs.reduce((sum, l) => sum + l.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0), 0);
+  const totalSets = useMemo(() => 
+    logs.reduce((sum, l) => sum + l.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0), 0),
+  [logs]);
+
+  if (logsLoading) {
+    return <div className="flex h-[50vh] items-center justify-center text-muted-foreground">Loading dashboard...</div>;
+  }
 
   return (
     <div className="space-y-6">
