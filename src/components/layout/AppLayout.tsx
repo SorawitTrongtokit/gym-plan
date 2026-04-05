@@ -86,7 +86,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-border/50 z-50 safe-area-bottom">
         <div className="flex items-center justify-around py-2">
           {navItems.map(item => (
             <Link

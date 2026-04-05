@@ -43,7 +43,7 @@ export function GlobalTimerIndicator() {
         'fixed top-3 right-3 z-[60] flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono font-bold shadow-lg border transition-all',
         isUrgent
           ? 'bg-destructive/90 text-destructive-foreground border-destructive animate-pulse'
-          : 'bg-card/95 text-primary border-primary/30 backdrop-blur-sm'
+          : 'bg-card/95 text-primary border-primary/30 glass pulse-ring'
       )}
     >
       <Timer className="h-3.5 w-3.5" />

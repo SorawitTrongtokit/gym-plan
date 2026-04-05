@@ -64,17 +64,19 @@ const Dashboard = () => {
     return (
       <div className="space-y-6">
         <div><h1 className="text-2xl font-bold tracking-tight">Dashboard</h1></div>
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-28 rounded-xl bg-secondary/30 animate-pulse" />
+        <div className="h-32 rounded-xl shimmer" />
+        <div className="grid grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-24 rounded-xl shimmer" />
           ))}
         </div>
+        <div className="h-40 rounded-xl shimmer" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-enter">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
@@ -113,7 +115,7 @@ const Dashboard = () => {
       </Card>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 stagger-in">
         <Card>
           <CardContent className="p-4 text-center">
             <Flame className="h-5 w-5 mx-auto mb-1 text-primary" />

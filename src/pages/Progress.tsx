@@ -16,14 +16,17 @@ const ProgressPage = () => {
   const selectedName = ALL_EXERCISES.find(e => e.id === selectedExercise)?.name;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-enter">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
         <p className="text-sm text-muted-foreground">Track your strength gains over time</p>
       </div>
 
       {isLoading && (
-        <div className="text-sm text-muted-foreground animate-pulse">Loading progress data...</div>
+        <div className="space-y-4">
+          <div className="h-72 rounded-xl shimmer" />
+          <div className="h-48 rounded-xl shimmer" />
+        </div>
       )}
 
       {/* Exercise selector + chart */}

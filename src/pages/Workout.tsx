@@ -50,7 +50,7 @@ const WorkoutPage = () => {
 
   if (!activeWorkout) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 page-enter">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Start Workout</h1>
           <p className="text-sm text-muted-foreground">Select your session and begin training</p>
@@ -110,7 +110,7 @@ const WorkoutPage = () => {
   const allDone = completedSets === totalSets;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 page-enter">
       {/* Workout header */}
       <div className="flex items-center justify-between">
         <div>
@@ -132,7 +132,7 @@ const WorkoutPage = () => {
 
       {/* Progress bar */}
       <div className="h-2 rounded-full bg-secondary overflow-hidden">
-        <div className="h-full bg-primary transition-all" style={{ width: `${(completedSets / totalSets) * 100}%` }} />
+        <div className="h-full bg-primary transition-all progress-stripe" style={{ width: `${(completedSets / totalSets) * 100}%` }} />
       </div>
 
       {/* Rest timer */}

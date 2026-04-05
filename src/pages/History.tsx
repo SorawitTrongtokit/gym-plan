@@ -44,7 +44,7 @@ const HistoryPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-enter">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Workout History</h1>
         <p className="text-sm text-muted-foreground">{filteredLogs.length} workouts logged</p>
@@ -74,7 +74,7 @@ const HistoryPage = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-in">
           {filteredLogs.map(log => {
             const isExpanded = expandedId === log.id;
             const totalSets = log.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0);
